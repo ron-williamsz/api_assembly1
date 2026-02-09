@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "${PORT:-5358}:${PORT:-5358}"
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+      - ./processed:/app/processed
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RAG_Z_API_URL=${RAG_Z_API_URL:-http://192.168.0.74:8000}
+
+  worker:
+    build: .
+    command: celery -A tasks.celery_app worker --loglevel=info --concurrency=${WORKERS:-4}
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+      - ./processed:/app/processed
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RAG_Z_API_URL=${RAG_Z_API_URL:-http://192.168.0.74:8000}
+
+volumes:
+  redis_data:

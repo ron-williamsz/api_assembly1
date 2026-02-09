@@ -1,0 +1,18 @@
+Para gerar uma ata a partir da transcrição, os recursos mais úteis da API do AssemblyAI são estes: [aws.amazon](https://aws.amazon.com/blogs/awsmarketplace/start-building-voice-intelligence-with-assemblyais-speech-to-text-model-from-aws-marketplace/)
+
+## Recursos principais para ata
+
+- **Summarization**: gera resumos em formatos como bullets, parágrafo, headline, gist etc., com modelos como *informative* e *conversational* ideais para reuniões e atas. [assemblyai](https://www.assemblyai.com/blog/how-use-ai-automatically-summarize-meeting-transcripts)
+- **Auto Chapters**: quebra o áudio em capítulos com título, resumo e timestamps, facilitando organizar a ata por tópicos ou pautas. [youtube](https://www.youtube.com/watch?v=GvfmDGin7Zs)
+- **Topic Detection (IAB / iab_categories)**: detecta automaticamente os temas discutidos e traz um resumo agregado por tópico, útil para estruturar seções da ata (Assuntos Tratados, Temas, etc.). [assemblyai](https://assemblyai.com/docs/speech-understanding/topic-detection)
+- **Speaker Diarization**: identifica “quem falou o quê”, permitindo montar trechos da ata por participante (por exemplo, decisões atribuídas a uma pessoa ou área). [assemblyai](https://www.assemblyai.com/products/speech-to-text)
+- **Sentiment / Conversational analysis via LLM Gateway**: permite rodar modelos adicionais sobre o transcript para extrair intenções, decisões, follow-ups personalizados, caso queira algo mais “inteligente” que o summarization padrão. [assemblyai](https://www.assemblyai.com/blog/speech-to-text-ai)
+
+## O que eu usaria no fluxo da sua app
+
+1. Ativar transcrição com: auto punctuation/casing, speaker diarization e word timings para um texto limpo e atribuível a pessoas. [assemblyai](https://www.assemblyai.com/products/speech-to-text)
+2. Ativar Summarization com estilo em *bullets* ou *paragraph* e modelo *informative* (ou *conversational* para reuniões) para gerar o corpo inicial da ata. [assemblyai](https://assemblyai.com/docs/speech-understanding/summarization)
+3. Ativar Auto Chapters para ter seções/tópicos com título e resumo, que você pode mapear para “Pauta 1, 2, 3...” no documento. [assemblyai](https://www.assemblyai.com/blog/how-use-ai-automatically-summarize-meeting-transcripts)
+4. (Opcional) Ativar Topic Detection para classificar o conteúdo em temas (ex.: Financeiro, RH, Projetos) e usar isso como índice ou tags da ata. [assemblyai](https://www.assemblyai.com/blog/new-improved-topic-detection-and-iab-classification)
+
+Se você me disser em que formato quer a ata (estrutura de seções, campos obrigatórios, idioma etc.), posso sugerir exatamente quais flags/params da API ligar e como transformar o JSON em um documento final.

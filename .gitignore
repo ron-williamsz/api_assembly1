@@ -1,0 +1,37 @@
+# Environment
+.env
+__pycache__/
+*.pyc
+*.pyo
+
+# Uploads and processed files
+uploads/
+processed/
+
+# Temporary files
+*.tmp
+nul
+c:temp/
+c:temprag_contexts.json
+temprag_contexts.json
+rag_test_output.json
+gradio_api_info.json
+webAPI-Assemblygradio_api_info.json
+
+# Office temp files
+~$*
+
+# Example atas (large binary files)
+exemplo_atas/
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

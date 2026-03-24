@@ -13,7 +13,7 @@ class Config:
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 
     # RAG-Z API
-    RAG_Z_API_URL = os.getenv("RAG_Z_API_URL", "http://192.168.0.74:8000")
+    RAG_Z_API_URL = os.getenv("RAG_Z_API_URL", "http://192.168.0.74:7862")
     RAG_Z_TIMEOUT = int(os.getenv("RAG_Z_TIMEOUT", 30))
     RAG_Z_ENABLED = os.getenv("RAG_Z_ENABLED", "true").lower() == "true"
 

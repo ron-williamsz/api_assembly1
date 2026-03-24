@@ -93,12 +93,12 @@ ATA_JSON_SCHEMA = """{
   ],
   "assuntos_gerais": [
     {
-      "descricao": "string",
-      "encaminhamento": "string | null"
+      "descricao": "string — parágrafo detalhado do assunto levantado, quem levantou e a discussão que gerou. OBRIGATÓRIO: capture TODOS os assuntos do final da assembleia.",
+      "encaminhamento": "string | null — o que ficou decidido ou prometido sobre este assunto"
     }
   ],
   "encerramento": {
-    "formula": "string — fórmula formal de encerramento",
+    "formula": "string — fórmula formal de encerramento COMPLETA. OBRIGATÓRIO. Ex: 'Questionado se dentre os presentes haveria mais algum item a ser tratado, e não havendo manifestações, o Sr. [Nome], Presidente da Mesa, determinou o encerramento dos trabalhos e a lavratura da presente ata, que segue assinada por ele, presidente, e por mim, [Nome], secretário(a).'",
     "data_extenso": "São Paulo, [dia] de [mês] de [ano]"
   }
 }"""
@@ -113,30 +113,38 @@ def build_system_prompt(use_rag: bool = False) -> str:
 1. Use SEMPRE terceira pessoa e voz passiva predominante: "Foi informado que...", nunca "Informamos que..."
 2. Formalize toda linguagem coloquial. Elimine gírias, repetições, hesitações e interjeições.
 3. Cada item da ordem do dia deve conter: contextualização, explanação, debates (se houver) e resultado da votação.
-4. Identifique pessoas sempre com nome + unidade + cargo (quando aplicável).
-5. Valores monetários devem ser registrados com precisão (R$ X.XXX,XX).
+4. Identifique pessoas sempre com nome completo + unidade + cargo (quando aplicável). Para eleições, inclua RG e CPF se mencionados.
+5. Valores monetários devem ser registrados com precisão (R$ X.XXX,XX) e, quando relevantes (valores de cota, rateio, totais), também POR EXTENSO: "R$ 102.527,59 (cento e dois mil quinhentos e vinte e sete reais e cinquenta e nove centavos)".
 6. O resultado da votação é OBRIGATÓRIO para itens deliberativos.
-7. Use as fórmulas padrão do universo condominial para transições e desfechos.
+7. Use as fórmulas padrão do universo condominial para transições e desfechos (veja seção ESTILO E FÓRMULAS).
 8. NÃO invente informações ausentes na transcrição.
 9. Marque com [A CONFIRMAR] qualquer dado que não ficou claro na transcrição.
 10. Quando detectar nomes próprios que parecem incorretos (erro de speech-to-text), marque como [VERIFICAR: "nome transcrito"].
 11. Quando houver apresentação de opções/alternativas para votação, documente TODAS as opções no campo "opcoes_apresentadas" ANTES do resultado da votação, incluindo valores quando mencionados.
 12. Após cada votação, registre condições, ressalvas ou condicionantes no campo "condicoes" usando a fórmula "Ficou consignado que:" ou "Ficou registrado que:".
-13. Para prestação de contas e previsão orçamentária, estruture os valores no campo "tabela_financeira" com colunas PREVISTO e REALIZADO (ou equivalentes).
-14. A contextualização de cada deliberação deve ser um parágrafo longo e formal, não apenas uma frase. Inclua datas, valores, referências a documentos e o contexto completo do que foi apresentado.
-15. Eleições, reconduções e mandatos devem SEMPRE incluir o período de vigência no campo "vigencia" (ex: "mandato de 01/01/2026 a 31/12/2027").
+13. Para prestação de contas e previsão orçamentária, estruture os valores no campo "tabela_financeira" com colunas PREVISTO e REALIZADO (ou equivalentes). No texto da contextualização, referencie a tabela: "conforme quadro abaixo:" ou "conforme demonstrativo apresentado:".
+14. A contextualização de cada deliberação deve ser um parágrafo LONGO e formal (mínimo 4-6 frases). Inclua datas, valores, nomes, referências a documentos e o contexto completo do que foi apresentado. Mesmo itens não-deliberativos (esclarecimentos, informes) devem ter contextualização detalhada com TODOS os dados mencionados na transcrição.
+15. Eleições, reconduções e mandatos devem SEMPRE incluir: período de vigência no campo "vigencia", nomes completos, unidades, e quando mencionados RG/CPF. Se houver menção a autorização bancária para a administradora, registre em explanacoes.
+16. TODOS os itens da ordem do dia devem ter um "titulo" DESCRITIVO — copie o mesmo texto que aparece na pauta anunciada na transcrição. Exemplos: "Aprovação da Prestação de Contas do Período de Julho/2023 a Junho/2024", "Eleição de Síndico, Subsíndico e Membros do Conselho para Mandato de 2 (Dois) Anos".
+17. O campo "assuntos_gerais" é OBRIGATÓRIO. Capture CADA assunto individual levantado no final da assembleia: reclamações, sugestões, pedidos, esclarecimentos. Cada assunto é uma entrada separada com descrição detalhada e encaminhamento. Se 5 temas diferentes foram discutidos, gere 5 entradas.
+18. O campo "encerramento.formula" é OBRIGATÓRIO e deve ser UMA ÚNICA fórmula de encerramento formal (1-2 frases). NÃO RESUMA a assembleia no encerramento — use apenas a fórmula padrão: "Não havendo mais nada a ser tratado, os trabalhos foram encerrados, sendo lavrada a presente ata, a qual vai assinada pelo Sr. [Presidente] e por mim, [Secretário(a)]."
+19. Para esclarecimentos e informes (itens não-deliberativos), use as "explanacoes" para registrar TODOS os detalhes discutidos, incluindo perguntas dos moradores e respostas da administradora/síndico. Não resuma — desenvolva.
+20. Capture TODAS as deliberações discutidas na assembleia, sem pular nenhum item da pauta. Se a transcrição menciona 6+ itens, a ata deve ter 6+ deliberações. Cada item DEVE aparecer na ordem do dia e ter sua deliberação correspondente.
+21. A PRIMEIRA deliberação DEVE começar com a fórmula de abertura dos trabalhos, mencionando a eleição do presidente da mesa e do secretário. Inclua esta abertura na contextualização do primeiro item.
+22. Quando uma deliberação resulta em múltiplas decisões distintas, enumere com alíneas: "(i) ...; (ii) ...; e (iii) ..." no campo "detalhes" da votação.
+23. NÃO duplique conteúdo. Cada informação aparece APENAS no campo correto do JSON. Não repita deliberações nos assuntos_gerais. Não repita a ata inteira no encerramento.
 
 ## GLOSSÁRIO DE TERMOS (transcrição oral → ata formal)
 
-- "o síndico" / "a síndica" → "O(A) Sr(a). [Nome], síndico(a)"
-- "a administradora" → "a representante da administradora"
+- "o síndico" / "a síndica" → "O(A) Sr(a). [Nome Completo], síndico(a)"
+- "a administradora" / "a Camila" / "a gerente" → "a representante da administradora" ou "Com a palavra, a Sra. [Nome], representante da Administradora [Nome]"
 - "o conselho" → "o Corpo Diretivo" / "o conselho consultivo"
 - "a taxa" / "o condomínio" (valor) → "a cota ordinária" / "a taxa condominial"
-- "o fundo" → "o Fundo de Reserva"
-- "a pasta" → "a pasta de prestação de contas"
+- "o fundo" → "o Fundo de Reserva" / "o Fundo de Melhorias"
+- "a pasta" → "a pasta de prestação de contas" / "a pasta contendo os demonstrativos financeiros"
 - "rateio extra" → "arrecadação extraordinária"
 - "previsão" → "previsão orçamentária"
-- "votaram sim" / "todo mundo aprovou" → "aprovado por unanimidade"
+- "votaram sim" / "todo mundo aprovou" → "aprovado por unanimidade dos presentes"
 - "a maioria votou" → "aprovado por maioria dos presentes"
 - "alguns se abstiveram" → "com abstenção de [N] unidades"
 - "foram contra" → "com [N] votos contrários"
@@ -147,7 +155,9 @@ def build_system_prompt(use_rag: bool = False) -> str:
 - "comissão" → "comissão de condôminos"
 - "pro forma" → "votação pro forma (sem caráter vinculante)"
 - "fração ideal" → "conforme fração ideal de cada unidade"
-- "mandato" → "mandato para o período de [data início] a [data fim]"
+- "mandato" → "mandato de [N] ([extenso]) anos, a partir de [data início] até [data fim]"
+- "o balancete" → "os balancetes mensais encaminhados aos condôminos por e-mail"
+- "a ação" / "o processo" → "a ação judicial" / "a demanda judicial em curso"
 
 ## SINAIS NA TRANSCRIÇÃO
 
@@ -157,79 +167,103 @@ Registro formal: "Que conste em ata...", "Quero registrar que...", "Fique regist
 Opções para votação: "Opção 1...", "Alternativa A...", "Primeira proposta...", "Temos duas possibilidades..."
 Condições pós-aprovação: "Ficou registrado...", "Com a condição de que...", "Desde que...", "Fica consignado..."
 Dados financeiros: "O previsto era...", "O realizado foi...", "A receita total...", "As despesas foram..."
+Eleição/candidatura: "Alguém se candidata...", "Eu me candidato...", "Gostaria de continuar..."
+Assuntos gerais: "Alguém tem mais alguma coisa...", "Quero falar sobre...", "Eu queria perguntar..."
 
 ## ESTILO E FÓRMULAS
 
-### Abertura
-- "Em abertura dos trabalhos, foi eleito(a) para presidir a mesa o(a) Sr(a). [Nome], [unidade]."
-- "Ato contínuo, procedeu-se à leitura do edital de convocação, publicado em [data], verificando-se a existência de quórum legal para realização da assembleia."
-- "Em continuidade, a representante da administradora expôs a pauta da presente assembleia."
+### Abertura (OBRIGATÓRIA — incluir na contextualização do Item 1)
+- "Iniciados os trabalhos, foi eleito(a), para presidir a mesa da Assembleia, o(a) Sr(a). [Nome Completo], do apto [N] e, para secretariá-lo(a), a Sra. [Nome], representante da Administradora [Nome]. Na sequência foi anunciada a matéria do primeiro item da ordem do dia:"
+- Se houver segunda convocação: "em segunda convocação, por falta de quórum legal na primeira"
+
+### Introdução de falas e apresentações
+- "Com a palavra, a Sra. [Nome], representante da Administradora, esclareceu aos presentes que..."
+- "Com a palavra, o Sr. [Nome], síndico, informou que..."
+- "Foi apresentada a projeção financeira dos últimos 12 (doze) meses, em que o condomínio apresentou..."
+- "A Sra. [Nome] apresentou proposta para..."
+- "Após esses esclarecimentos, foi apresentada..."
 
 ### Transições entre itens
+- "Na sequência, foi anunciada a matéria do [N]º item da ordem do dia:"
+- "Dando sequência, foi apresentado(a)..."
+- "Ato contínuo, a Sra. [Nome] apresentou..."
 - "Isto posto, passou-se ao [N]º item da Ordem do Dia..."
-- "Na sequência, passou ao [N]º item da Ordem do Dia..."
-- "Ato contínuo, passou-se ao [N]º item..."
-- "Dando seguimento à Ordem do Dia..."
-- "Em continuidade, foi apresentado(a)..."
+
+### Referência a dados financeiros
+- "conforme quadro abaixo:" (quando há tabela_financeira)
+- "conforme demonstrativo apresentado:"
+- "Fica, portanto, a arrecadação composta da seguinte forma: Ordinária R$ [valor] ([extenso]), [Fundo] R$ [valor] ([extenso])..."
 
 ### Votação
+- "Após alguns esclarecimentos, colocada a matéria em votação, foram aprovadas por unanimidade dos presentes..."
+- "Após sanadas todas as dúvidas, colocada a matéria em votação, fica aprovado por maioria dos presentes, com [N] votos contrários que: (i) ...; e (ii) ..."
+- "Foi questionado aos presentes se havia algum candidato ao cargo de Síndico, se apresentando e sendo reeleito por unanimidade dos votos, o Sr. [Nome], apto [N], portador do RG nº [RG] e CPF nº [CPF]..."
 - "Submetida a matéria à votação, foi aprovada por unanimidade dos presentes."
-- "Colocada em votação, ficou aprovada por maioria a [Opção/proposta]."
-- "Procedeu-se à votação da candidatura do(a) Sr(a). [Nome], sendo este(a) eleito(a) por unanimidade."
-- "Após ampla discussão e esclarecimento dos questionamentos, colocada em votação, a matéria foi aprovada por unanimidade."
 
 ### Condições pós-aprovação
 - "Ficou consignado que:"
 - "Ficou registrado que:"
-- "Restou consignada a preferência unânime..."
-- "Foi ressaltado que..."
+- "A regra anteriormente aprovada para [assunto] permanece inalterada."
+- "sendo mantida a isenção de [%] sobre a cota ordinária" (para síndico reeleito)
 
-### Encerramento
-- "Questionado se dentre os presentes haveria mais algum item a ser tratado, e não havendo manifestações, o(a) Sr(a). Presidente determinou o encerramento dos trabalhos e a lavratura da presente ata, que segue assinada por ele(a), presidente, e por mim, secretário(a)."
-- "Não havendo mais assuntos a serem tratados, o(a) Sr(a). Presidente deu por encerrada a assembleia, lavrando-se a presente ata."
+### Encerramento (fórmula curta — NÃO RESUMA a assembleia)
+- "Não havendo mais nada a ser tratado, os trabalhos foram encerrados, sendo lavrada a presente ata, a qual vai assinada pelo Sr. Presidente e por mim, Secretário(a)."
+- "Questionado se dentre os presentes haveria mais algum item a ser tratado, e não havendo mais assuntos, determinou o presidente da mesa o encerramento dos trabalhos e a lavratura da presente ata, que segue assinada por ele presidente e por mim, secretário(a)."
 
-## EXEMPLO DE DELIBERAÇÃO BEM ESCRITA
+## EXEMPLOS DE DELIBERAÇÕES BEM ESCRITAS
 
-EXEMPLO de como estruturar uma deliberação de prestação de contas:
+### EXEMPLO 1 — Prestação de contas
 
 Contextualização:
-"Em continuidade, a representante da administradora apresentou a prestação de contas do exercício de 2024, informando que a pasta contendo os demonstrativos financeiros encontrava-se à disposição dos condôminos desde o dia 10/11/2025. Foi esclarecido que as receitas totais no período foram de R$ 193.012,50, enquanto as despesas totalizaram R$ 186.478,37, resultando em superávit de R$ 6.534,13."
+"Com a palavra, a Sra. Camila, representante da Administradora Zangari, esclareceu aos presentes que a dinâmica desse item é representada pelo envio das pastas de prestações de contas mensalmente ao conselho e síndico, que são devidamente analisadas, e na mesma periodicidade os balancetes são encaminhados aos condôminos por e-mail para que possam ter ciência da prestação de contas através de toda movimentação financeira descrita neles. Após esses esclarecimentos, foi apresentada a projeção financeira dos últimos 12 (doze) meses, em que o condomínio apresentou um déficit de 0,56% entre o que foi previsto e o que foi realizado, conforme quadro abaixo:"
 
-Tabela financeira (campo "tabela_financeira"):
-{
-  "titulo": "Prestação de Contas 2024",
-  "colunas": ["Categoria", "Previsto", "Realizado"],
-  "linhas": [
-    {"categoria": "DESPESA COM PESSOAL", "valores": ["R$ 130.141,93", "R$ 119.128,84"]},
-    {"categoria": "CONSUMO", "valores": ["R$ 10.880,84", "R$ 12.063,72"]},
-    {"categoria": "MANUTENÇÃO", "valores": ["R$ 36.720,30", "R$ 41.508,87"]}
-  ],
-  "total": ["R$ 193.012,50", "R$ 186.478,37"]
-}
+Tabela financeira:
+{"titulo": "Prestação de Contas Jul/2023 a Jun/2024", "colunas": ["Categoria", "Previsto", "Realizado"], "linhas": [{"categoria": "DESPESA COM PESSOAL", "valores": ["R$ 130.141,93", "R$ 119.128,84"]}, {"categoria": "TERCEIRIZAÇÃO", "valores": ["R$ 200.000,00", "R$ 210.500,00"]}], "total": ["R$ 1.137.156,56", "R$ 1.143.600,00"]}
+
+Explanações:
+["Apresentou também o índice de inadimplência do condomínio que atualmente é de 0,65%, com uma única unidade em atraso.", "Dando sequência, foi apresentada a evolução financeira das contas do Condomínio referente ao período de aprovação e saldo final.", "Ato contínuo, a Sra. Camila apresentou proposta para unificação das contas destinadas a melhorias e obras, informando que após a quitação da obra de retrofit da fachada, a conta Benfeitorias será extinta, e o valor de arrecadação mensal da conta Locação será também destinado ao Fundo de Melhorias."]
 
 Votação:
-"Submetida a matéria à votação, as contas foram aprovadas por unanimidade dos presentes."
+{"resultado": "aprovado_unanimidade", "detalhes": "Após alguns esclarecimentos, colocada a matéria em votação, foram aprovadas por unanimidade dos presentes as contas do período e a unificação das contas destinadas a melhorias e obras conforme proposta."}
 
-Condições (campo "condicoes"):
-["Ficou consignado que o superávit apurado será revertido ao Fundo de Reserva."]
-
-EXEMPLO de deliberação com opções:
+### EXEMPLO 2 — Eleição com detalhes completos
 
 Contextualização:
-"Na sequência, passou ao 5º item da Ordem do Dia, referente à reforma da fachada do edifício. O(A) Sr(a). [Nome], síndico(a), apresentou três orçamentos obtidos junto a empresas especializadas, detalhando escopo, prazo e valor de cada proposta."
+"Foi questionado aos presentes se havia algum candidato ao cargo de Síndico, se apresentando e sendo reeleito por unanimidade dos votos, o Sr. Ricardo Nogueira Duarte, apto 101, portador do RG nº 9.400.230-7 e CPF nº 040.089.868-39, sendo mantida a isenção de 100% sobre a cota ordinária. Para o cargo de Subsíndico se apresentou e foi eleito por unanimidade dos votos o Sr. Marcelo Bianchi, apto 34. Para os cargos de conselheiros se candidataram e foram eleitos: Sr. Paulo Antonio Cabanas Capani, apto 204; Sr. Domingos Acácio Rodrigues, apto 171; e Sra. Flávia Leonato Machado Livero, apto 104."
 
-Opções apresentadas (campo "opcoes_apresentadas"):
-[
-  {"descricao": "Opção A: Empresa Alpha — reforma completa com pintura", "valor": "R$ 280.000,00", "detalhes": "Prazo de 6 meses, inclui andaimes"},
-  {"descricao": "Opção B: Empresa Beta — reforma parcial (fachada frontal)", "valor": "R$ 150.000,00", "detalhes": "Prazo de 3 meses"},
-  {"descricao": "Opção C: Empresa Gamma — reforma completa sem pintura", "valor": "R$ 210.000,00", "detalhes": "Prazo de 4 meses"}
-]
+Votação:
+{"resultado": "aprovado_unanimidade", "vigencia": "mandato de 2 (dois) anos, a partir de 05/09/2024 até 04/09/2026", "detalhes": "Todos os eleitos cumprirão o mandato de 2 (dois) anos. Foi ratificado que a movimentação bancária será realizada pela administradora."}
 
-Votação com opção escolhida:
-{"resultado": "aprovado_maioria", "opcao_escolhida": "Opção A: Empresa Alpha", "detalhes": "Aprovada por maioria a proposta da Empresa Alpha, com 2 votos contrários."}
+### EXEMPLO 3 — Deliberação com múltiplas alíneas
+
+Contextualização:
+"Com a palavra, o Sr. Ricardo, síndico, informou que recebeu algumas solicitações de pais moradores, que menores de 13 anos não fizessem o uso da academia mesmo que acompanhados de seus responsáveis, pois as crianças ficam correndo dentro do espaço ou até mesmo utilizar os equipamentos de forma irregular, podendo assim ocasionar acidentes."
+
+Votação:
+{"resultado": "aprovado_maioria", "votos_contrarios": 2, "detalhes": "Após sanadas todas as dúvidas, colocada a matéria em votação, fica aprovado por maioria dos presentes, com dois votos contrários que: (i) adolescentes menores de 13 (treze) anos estão proibidos de frequentar a academia, mesmo que acompanhados de seus responsáveis; e (ii) adolescentes de 13 (treze) e 14 (catorze) anos de idade podem frequentar e utilizar a academia, desde que acompanhados de seu pai ou mãe durante todo o período em que permanecerem no espaço."}
 
 Condições:
-["Ficou consignado que o síndico deverá apresentar o contrato para aprovação do Conselho em até 30 dias.", "Ficou registrado que o rateio extraordinário para custeio da obra será cobrado em 10 parcelas."]
+["A regra anteriormente aprovada para adolescentes a partir de 15 (quinze) anos frequentarem a academia sozinhos, desde que autorizados por escrito por seus pais, permanece inalterada."]
+
+## DESENVOLVIMENTO DO TEXTO
+
+A ata deve ser COMPLETA e DETALHADA. Siga estas diretrizes RIGOROSAMENTE:
+
+1. **Contextualização**: Cada deliberação deve ter MÍNIMO 4-6 frases formais. Use "Com a palavra" para introduzir quem fala. Inclua:
+   - Quem apresentou (nome completo + cargo/unidade)
+   - O que foi apresentado (assunto + detalhes)
+   - Valores, datas, períodos mencionados
+   - Referências a documentos, pastas, balancetes, relatórios
+   - Antecedentes relevantes mencionados na transcrição
+   - "conforme quadro abaixo:" quando houver tabela financeira
+
+2. **Explanações**: Registre TODOS os esclarecimentos, perguntas e respostas. Cada ponto separado na lista.
+
+3. **Debates**: Capture manifestações individuais com nome, unidade e argumento DESENVOLVIDO.
+
+4. **Assuntos Gerais**: OBRIGATÓRIO. Cada assunto é UMA ENTRADA SEPARADA. Se falaram sobre pintura, quadra, app e elevador = 4 entradas separadas. Cada uma com "descricao" detalhada e "encaminhamento".
+
+5. **Encerramento**: APENAS a fórmula de encerramento (1-2 frases). NÃO inclua resumo da assembleia. Exemplo: "Não havendo mais nada a ser tratado, os trabalhos foram encerrados, sendo lavrada a presente ata, a qual vai assinada pelo Sr. [Nome], Presidente, e por mim, [Nome], Secretário(a). São Paulo, [data por extenso]."
 
 ## FORMATO DE SAÍDA
 
@@ -290,7 +324,25 @@ def _build_user_prompt(transcricao: dict, participantes_json: str = None, dados_
         for ch in chapters:
             parts.append(f"- {ch.get('headline', 'Item')}: {ch.get('summary', '')}")
 
-    parts.append("\n---\nAnalise a transcrição acima e gere a ata estruturada em JSON conforme o schema definido. Se houver dados faltantes (CNPJ, endereço, nome completo do síndico/presidente) e a ferramenta de busca estiver disponível, consulte os documentos do condomínio ANTES de marcar [A CONFIRMAR].")
+    parts.append("""
+---
+## INSTRUÇÕES FINAIS
+
+Analise a transcrição acima e gere a ata estruturada em JSON conforme o schema definido.
+
+CHECKLIST OBRIGATÓRIO — verifique ANTES de enviar o JSON:
+1. Cada item da "ordem_do_dia" tem "titulo" copiado da pauta anunciada na transcrição
+2. Cada "deliberacoes" tem "contextualizacao" com MÍNIMO 4-6 frases formais (não resumos curtos)
+3. A contextualização do PRIMEIRO item inclui a abertura: "Iniciados os trabalhos, foi eleito(a)..."
+4. Valores importantes estão em numeral + extenso: "R$ 8.000,00 (oito mil reais)"
+5. "assuntos_gerais" lista CADA assunto individual do final da assembleia como entrada separada
+6. "encerramento.formula" é UMA fórmula de encerramento (1-2 frases) — NÃO um resumo da assembleia
+7. NÃO há duplicação — cada informação aparece apenas no campo correto
+8. TODOS os itens da pauta da transcrição estão presentes nas deliberações
+9. Tabelas financeiras são referenciadas no texto com "conforme quadro abaixo:"
+10. Eleições incluem nomes completos, unidades, período de vigência
+
+Se houver dados faltantes (CNPJ, endereço, nome completo do síndico/presidente) e a ferramenta de busca estiver disponível, consulte os documentos do condomínio ANTES de marcar [A CONFIRMAR].""")
 
     return "\n".join(parts)
 
@@ -619,7 +671,7 @@ def analyze_transcription(
             "model": Config.OPENAI_MODEL,
             "messages": messages,
             "temperature": 0.3,
-            "max_tokens": 8000,
+            "max_tokens": 16000,
         }
 
         if tools:
@@ -647,7 +699,7 @@ def analyze_transcription(
                     messages=messages,
                     response_format={"type": "json_object"},
                     temperature=0.3,
-                    max_tokens=8000,
+                    max_tokens=16000,
                 )
                 content = final_response.choices[0].message.content or ""
 
@@ -712,7 +764,7 @@ def analyze_transcription(
         messages=messages,
         response_format={"type": "json_object"},
         temperature=0.3,
-        max_tokens=8000,
+        max_tokens=16000,
     )
     content = final_response.choices[0].message.content or ""
     ata_data = json.loads(content)

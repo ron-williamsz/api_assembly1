@@ -606,65 +606,52 @@ class TestAtaModelLegado(unittest.TestCase):
 
 
 class TestRAGClient(unittest.TestCase):
-    """Test RAG-Z client module."""
+    """Test RAG-Z client module (Gradio API)."""
 
-    @patch("processors.rag_client._get_client")
-    def test_list_contexts_success(self, mock_get_client):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "contexts": [{"name": "cond_0388", "total_files": 5}],
-            "total": 1,
-        }
-        mock_client_instance = MagicMock()
-        mock_client_instance.get.return_value = mock_response
-        mock_get_client.return_value = mock_client_instance
+    @patch("processors.rag_client._gradio_call")
+    def test_list_contexts_success(self, mock_gradio_call):
+        # refresh_dropdown returns dropdown choices
+        mock_gradio_call.side_effect = [
+            [{"choices": [["cond_0388", "cond_0388"], ["cond_0435", "cond_0435"]], "value": "cond_0388", "__type__": "update"}],
+            # get_status for stats
+            ["• cond_0388: 1986 docs, 10 arquivos\n• cond_0435: 1561 docs, 5 arquivos"],
+        ]
 
         from processors.rag_client import list_contexts
 
         result = list_contexts()
-        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["name"], "cond_0388")
+        self.assertEqual(result[0]["total_docs"], 1986)
 
-    @patch("processors.rag_client._get_client")
-    def test_list_contexts_error(self, mock_get_client):
-        mock_client_instance = MagicMock()
-        mock_client_instance.get.side_effect = Exception("Connection refused")
-        mock_get_client.return_value = mock_client_instance
+    @patch("processors.rag_client._gradio_call")
+    def test_list_contexts_error(self, mock_gradio_call):
+        mock_gradio_call.side_effect = Exception("Connection refused")
 
         from processors.rag_client import list_contexts
 
         result = list_contexts()
         self.assertEqual(result, [])
 
-    @patch("processors.rag_client._get_client")
-    def test_query_hierarchical_success(self, mock_get_client):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "answer": "De acordo com o artigo 15...",
-            "sources": [{"content": "Art 15...", "file": "convencao.pdf", "chunk": "12/50"}],
-            "contexts_searched": ["cond_0388"],
-            "hierarchy_applied": True,
-        }
-        mock_response.raise_for_status = MagicMock()
-        mock_client_instance = MagicMock()
-        mock_client_instance.post.return_value = mock_response
-        mock_get_client.return_value = mock_client_instance
+    @patch("processors.rag_client._gradio_call")
+    def test_query_hierarchical_success(self, mock_gradio_call):
+        # switch_context then query_rag
+        mock_gradio_call.side_effect = [
+            ["Contexto selecionado: cond_0388"],  # switch_context
+            ["De acordo com o artigo 15...", "Fonte: convencao.pdf\nArt 15..."],  # query_rag
+        ]
 
         from processors.rag_client import query_hierarchical
 
         result = query_hierarchical("Posso ter cachorro?", "cond_0388")
         self.assertIn("answer", result)
-        self.assertEqual(len(result["sources"]), 1)
+        self.assertIn("De acordo com o artigo 15", result["answer"])
 
-    @patch("processors.rag_client._get_client")
-    def test_query_hierarchical_timeout(self, mock_get_client):
+    @patch("processors.rag_client._gradio_call")
+    def test_query_hierarchical_timeout(self, mock_gradio_call):
         import httpx
 
-        mock_client_instance = MagicMock()
-        mock_client_instance.post.side_effect = httpx.TimeoutException("timeout")
-        mock_get_client.return_value = mock_client_instance
+        mock_gradio_call.side_effect = httpx.TimeoutException("timeout")
 
         from processors.rag_client import query_hierarchical
 

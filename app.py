@@ -6,6 +6,7 @@ import os
 import uuid
 
 from flask import Flask, Response, jsonify, request, send_from_directory
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from config import Config
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 app.config["MAX_CONTENT_LENGTH"] = Config.MAX_FILE_SIZE
+CORS(app)
 
 # Ensure required directories exist
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)

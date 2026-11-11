@@ -107,6 +107,30 @@ def get_transcricao(task_id: str):
     return jsonify(json.loads(data)), 200
 
 
+@app.route("/restaurar-transcricao", methods=["POST"])
+def restaurar_transcricao():
+    """POST /restaurar-transcricao — Recoloca uma transcrição já salva no Redis.
+
+    Usado pelo editor integrado quando a transcrição persistida no banco precisa
+    voltar para o Redis (após expirar do TTL de 72h) para que /analisar funcione.
+    """
+    body = request.get_json(silent=True) or {}
+    task_id = body.get("task_id")
+    transcription_data = body.get("transcription_data")
+
+    if not task_id or transcription_data is None:
+        return jsonify({"error": "task_id e transcription_data são obrigatórios."}), 400
+
+    r = get_redis_client()
+    r.setex(
+        f"transcricao:{task_id}",
+        Config.TRANSCRIPTION_TTL,
+        json.dumps(transcription_data, ensure_ascii=False),
+    )
+
+    return jsonify({"ok": True, "task_id": task_id, "ttl": Config.TRANSCRIPTION_TTL}), 200
+
+
 # ──────────────────────────────────────────────
 # ESTÁGIO 2 — Análise LLM
 # ──────────────────────────────────────────────
